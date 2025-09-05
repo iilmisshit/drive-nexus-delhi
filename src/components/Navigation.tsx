@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { NavLink } from 'react-router-dom';
 import { Menu, X, Phone, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { contactInfo, companyInfo } from '@/config';
 
 const Navigation = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -20,27 +22,31 @@ const Navigation = () => {
           {/* Logo */}
           <div className="flex items-center">
             <div className="text-2xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              Delhi NCR Cars
+              {companyInfo.name}
             </div>
           </div>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
             {navLinks.map((link) => (
-              <a
+              <NavLink
                 key={link.name}
-                href={link.href}
-                className="text-foreground hover:text-primary transition-colors duration-300 font-medium"
+                to={link.href}
+                className={({ isActive }) => 
+                  `text-foreground hover:text-primary transition-colors duration-300 font-medium ${
+                    isActive ? 'text-secondary' : ''
+                  }`
+                }
               >
                 {link.name}
-              </a>
+              </NavLink>
             ))}
           </div>
 
           {/* Desktop CTA Buttons */}
           <div className="hidden md:flex items-center space-x-4">
             <a
-              href="tel:+919876543210"
+              href={`tel:${contactInfo.phone}`}
               className="flex items-center text-muted-foreground hover:text-primary transition-colors"
             >
               <Phone className="w-4 h-4 mr-2" />
@@ -67,25 +73,29 @@ const Navigation = () => {
           <div className="md:hidden py-4 border-t border-border animate-fade-in-up">
             <div className="flex flex-col space-y-4">
               {navLinks.map((link) => (
-                <a
+                <NavLink
                   key={link.name}
-                  href={link.href}
-                  className="text-foreground hover:text-primary transition-colors font-medium"
+                  to={link.href}
+                  className={({ isActive }) => 
+                    `text-foreground hover:text-primary transition-colors font-medium ${
+                      isActive ? 'text-secondary' : ''
+                    }`
+                  }
                   onClick={() => setIsMenuOpen(false)}
                 >
                   {link.name}
-                </a>
+                </NavLink>
               ))}
               <div className="flex flex-col space-y-3 pt-4 border-t border-border">
                 <a
-                  href="tel:+919876543210"
+                  href={`tel:${contactInfo.phone}`}
                   className="flex items-center text-muted-foreground hover:text-primary transition-colors"
                 >
                   <Phone className="w-4 h-4 mr-2" />
-                  +91 98765 43210
+                  {contactInfo.phone}
                 </a>
                 <a
-                  href="https://wa.me/919876543210"
+                  href={`https://wa.me/${contactInfo.whatsappNumber}`}
                   className="flex items-center text-muted-foreground hover:text-success transition-colors"
                 >
                   <MessageCircle className="w-4 h-4 mr-2" />

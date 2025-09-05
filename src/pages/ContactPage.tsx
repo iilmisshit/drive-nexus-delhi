@@ -1,15 +1,28 @@
 import { useState } from 'react';
-import { Phone, Mail, MapPin, Clock, MessageCircle, Send } from 'lucide-react';
+import { Phone, Mail, MapPin, Clock, MessageCircle, Send, Loader2 } from 'lucide-react';
+import { z } from 'zod';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
+import { contactInfo, companyInfo } from '@/config';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 
+const contactFormSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters'),
+  phone: z.string().regex(/^[+]?[\d\s\-()]+$/, 'Please enter a valid phone number'),
+  email: z.string().email('Please enter a valid email address'),
+  carInterest: z.string().optional(),
+  testDriveDate: z.string().optional(),
+  message: z.string().optional()
+});
+
+type ContactFormData = z.infer<typeof contactFormSchema>;
+
 const ContactPage = () => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<ContactFormData>({
     name: '',
     phone: '',
     email: '',
@@ -17,40 +30,62 @@ const ContactPage = () => {
     testDriveDate: '',
     message: ''
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<Partial<ContactFormData>>({});
   const { toast } = useToast();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmitting(true);
+    setErrors({});
     
-    // Basic validation
-    if (!formData.name || !formData.phone || !formData.email) {
+    try {
+      // Validate form data
+      const validatedData = contactFormSchema.parse(formData);
+      
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
       toast({
-        title: "Missing Information",
-        description: "Please fill in all required fields.",
-        variant: "destructive",
+        title: "Thank You!",
+        description: "Our team will get in touch with you shortly.",
       });
-      return;
+
+      // Reset form
+      setFormData({
+        name: '',
+        phone: '',
+        email: '',
+        carInterest: '',
+        testDriveDate: '',
+        message: ''
+      });
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        const fieldErrors: Partial<ContactFormData> = {};
+        error.issues.forEach((issue) => {
+          if (issue.path[0]) {
+            fieldErrors[issue.path[0] as keyof ContactFormData] = issue.message;
+          }
+        });
+        setErrors(fieldErrors);
+        toast({
+          title: "Validation Error",
+          description: "Please check the form and try again.",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsSubmitting(false);
     }
-
-    // Simulate form submission
-    toast({
-      title: "Thank You!",
-      description: "Our team will get in touch with you shortly.",
-    });
-
-    // Reset form
-    setFormData({
-      name: '',
-      phone: '',
-      email: '',
-      carInterest: '',
-      testDriveDate: '',
-      message: ''
-    });
   };
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = (field: keyof ContactFormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    // Clear error when user starts typing
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: undefined }));
+    }
   };
 
   return (
@@ -87,7 +122,9 @@ const ContactPage = () => {
                         onChange={(e) => handleInputChange('name', e.target.value)}
                         placeholder="Your full name"
                         required
+                        className={errors.name ? "border-destructive" : ""}
                       />
+                      {errors.name && <p className="text-sm text-destructive mt-1">{errors.name}</p>}
                     </div>
                     <div>
                       <label className="block text-sm font-medium mb-2">Phone *</label>
@@ -97,7 +134,9 @@ const ContactPage = () => {
                         onChange={(e) => handleInputChange('phone', e.target.value)}
                         placeholder="+91 98765 43210"
                         required
+                        className={errors.phone ? "border-destructive" : ""}
                       />
+                      {errors.phone && <p className="text-sm text-destructive mt-1">{errors.phone}</p>}
                     </div>
                   </div>
 
@@ -109,7 +148,9 @@ const ContactPage = () => {
                       onChange={(e) => handleInputChange('email', e.target.value)}
                       placeholder="your.email@example.com"
                       required
+                      className={errors.email ? "border-destructive" : ""}
                     />
+                    {errors.email && <p className="text-sm text-destructive mt-1">{errors.email}</p>}
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -149,9 +190,13 @@ const ContactPage = () => {
                     />
                   </div>
 
-                  <Button type="submit" className="w-full btn-secondary">
-                    <Send className="w-4 h-4 mr-2" />
-                    Send Inquiry
+                  <Button type="submit" className="w-full btn-secondary" disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    ) : (
+                      <Send className="w-4 h-4 mr-2" />
+                    )}
+                    {isSubmitting ? 'Sending...' : 'Send Inquiry'}
                   </Button>
                 </form>
               </div>
@@ -165,28 +210,27 @@ const ContactPage = () => {
                     <div className="flex items-start space-x-3">
                       <MapPin className="w-5 h-5 text-secondary mt-1 shrink-0" />
                       <div>
-                        <p className="font-medium text-foreground">Delhi NCR Cars</p>
-                        <p className="text-muted-foreground">123 GT Karnal Road</p>
-                        <p className="text-muted-foreground">New Delhi - 110033</p>
+                        <p className="font-medium text-foreground">{companyInfo.name}</p>
+                        <p className="text-muted-foreground">{contactInfo.address}</p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-3">
                       <Phone className="w-5 h-5 text-secondary shrink-0" />
-                      <a href="tel:+919876543210" className="text-foreground hover:text-secondary transition-colors">
-                        +91 98765 43210
+                      <a href={`tel:${contactInfo.phone}`} className="text-foreground hover:text-secondary transition-colors">
+                        {contactInfo.phone}
                       </a>
                     </div>
                     <div className="flex items-center space-x-3">
                       <Mail className="w-5 h-5 text-secondary shrink-0" />
-                      <a href="mailto:info@delhincrcars.com" className="text-foreground hover:text-secondary transition-colors">
-                        info@delhincrcars.com
+                      <a href={`mailto:${contactInfo.email}`} className="text-foreground hover:text-secondary transition-colors">
+                        {contactInfo.email}
                       </a>
                     </div>
                     <div className="flex items-center space-x-3">
                       <Clock className="w-5 h-5 text-secondary shrink-0" />
                       <div className="text-muted-foreground">
-                        <p>Mon-Sat: 9:00 AM - 8:00 PM</p>
-                        <p>Sunday: 10:00 AM - 6:00 PM</p>
+                        <p>Mon-Sat: {contactInfo.businessHours.weekdays}</p>
+                        <p>Sunday: {contactInfo.businessHours.sunday}</p>
                       </div>
                     </div>
                   </div>
@@ -197,7 +241,7 @@ const ContactPage = () => {
                   <h3 className="text-xl font-bold text-primary mb-4">Quick Actions</h3>
                   <div className="space-y-3">
                     <a
-                      href="tel:+919876543210"
+                      href={`tel:${contactInfo.phone}`}
                       className="flex items-center p-3 rounded-lg border border-border hover:bg-muted transition-colors"
                     >
                       <Phone className="w-5 h-5 text-accent mr-3" />
@@ -207,7 +251,7 @@ const ContactPage = () => {
                       </div>
                     </a>
                     <a
-                      href="https://wa.me/919876543210"
+                      href={`https://wa.me/${contactInfo.whatsappNumber}`}
                       className="flex items-center p-3 rounded-lg border border-border hover:bg-muted transition-colors"
                     >
                       <MessageCircle className="w-5 h-5 text-success mr-3" />

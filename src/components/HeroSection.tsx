@@ -34,7 +34,7 @@ const HeroSection = () => {
       setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
     }, 6000);
     return () => clearInterval(timer);
-  }, [heroSlides.length]);
+  }, [heroSlides.length, currentSlide]);
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
@@ -95,12 +95,14 @@ const HeroSection = () => {
       <button
         onClick={prevSlide}
         className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-all duration-300"
+        aria-label="Previous slide"
       >
         <ChevronLeft className="w-6 h-6" />
       </button>
       <button
         onClick={nextSlide}
         className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 transition-all duration-300"
+        aria-label="Next slide"
       >
         <ChevronRight className="w-6 h-6" />
       </button>
